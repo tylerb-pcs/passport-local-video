@@ -1,84 +1,77 @@
-const mongoose = require("mongoose");
-const express = require("express");
-const cors = require("cors");
-const passport = require("passport");
-const passportLocal = require("passport-local").Strategy;
-const cookieParser = require("cookie-parser");
-const bcrypt = require("bcryptjs");
-const session = require("express-session");
-const bodyParser = require("body-parser");
+import cookieSession from "cookie-session";
+import express from "express";
 const app = express();
-const User = require("./user");
-//----------------------------------------- END OF IMPORTS---------------------------------------------------
-mongoose.connect(
-  "mongodb+srv://{Place Your Username Here!}:{Place Your Password Here!}@cluster0-q9g9s.mongodb.net/test?retryWrites=true&w=majority",
+const port = 4000;
+
+import passport from "passport";
+// import passportSetup from "./config/passport-setup";
+import session from "express-session";
+import authRoutes from "./routes/auth-routes.js";
+import mongoose from "mongoose";
+import keys from "./config/keys.js";
+import cors from "cors";
+import cookieParser from "cookie-parser"; // parse cookie header
+
+// connect to mongodb
+mongoose.connect(keys.MONGODB_URI,
   {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   },
   () => {
-    console.log("Mongoose Is Connected");
-  }
+  console.log("Connected to MongoDB");
+});
+
+app.use(
+  cookieSession({
+    name: "session",
+    keys: [keys.COOKIE_KEY],
+    maxAge: 24 * 60 * 60 * 100
+  })
 );
 
-// Middleware
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// parse cookies
+app.use(cookieParser());
+
+// initalize passport
+app.use(passport.initialize());
+// deserialize cookie from the browser
+app.use(passport.session());
+
+// set up cors to allow us to accept requests from our client
 app.use(
   cors({
-    origin: "http://localhost:3000", // <-- location of the react app were connecting to
-    credentials: true,
+    origin: "http://localhost:3000", // allow to server to accept request from different origin
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    credentials: true // allow session cookie from browser to pass through
   })
 );
-app.use(
-  session({
-    secret: "secretcode",
-    resave: true,
-    saveUninitialized: true,
-  })
-);
-app.use(cookieParser("secretcode"));
-app.use(passport.initialize());
-app.use(passport.session());
-require("./passportConfig")(passport);
 
-//----------------------------------------- END OF MIDDLEWARE---------------------------------------------------
+// set up routes
+app.use("/auth", authRoutes);
 
-// Routes
-app.post("/login", (req, res, next) => {
-  passport.authenticate("local", (err, user, info) => {
-    if (err) throw err;
-    if (!user) res.send("No User Exists");
-    else {
-      req.logIn(user, (err) => {
-        if (err) throw err;
-        res.send("Successfully Authenticated");
-        console.log(req.user);
-      });
-    }
-  })(req, res, next);
-});
-app.post("/register", (req, res) => {
-  User.findOne({ username: req.body.username }, async (err, doc) => {
-    if (err) throw err;
-    if (doc) res.send("User Already Exists");
-    if (!doc) {
-      const hashedPassword = await bcrypt.hash(req.body.password, 10);
+const authCheck = (req, res, next) => {
+  if (!req.user) {
+    res.status(401).json({
+      authenticated: false,
+      message: "user has not been authenticated"
+    });
+  } else {
+    next();
+  }
+};
 
-      const newUser = new User({
-        username: req.body.username,
-        password: hashedPassword,
-      });
-      await newUser.save();
-      res.send("User Created");
-    }
+// if it's already login, send the profile response,
+// otherwise, send a 401 response that the user is not authenticated
+// authCheck before navigating to home page
+app.get("/", authCheck, (req, res) => {
+  res.status(200).json({
+    authenticated: true,
+    message: "user successfully authenticated",
+    user: req.user,
+    cookies: req.cookies
   });
 });
-app.get("/user", (req, res) => {
-  res.send(req.user); // The req.user stores the entire user that has been authenticated inside of it.
-});
-//----------------------------------------- END OF ROUTES---------------------------------------------------
-//Start Server
-app.listen(4000, () => {
-  console.log("Server Has Started");
-});
+
+// connect react to nodejs express server
+app.listen(port, () => console.log('Server is running'));

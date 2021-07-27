@@ -48,10 +48,13 @@ function App() {
           placeholder="username"
           onChange={(e) => setRegisterUsername(e.target.value)}
         />
+        <br />
         <input
           placeholder="password"
           onChange={(e) => setRegisterPassword(e.target.value)}
+          type="password"
         />
+        <br />
         <button onClick={register}>Submit</button>
       </div>
 
@@ -61,17 +64,20 @@ function App() {
           placeholder="username"
           onChange={(e) => setLoginUsername(e.target.value)}
         />
+        <br />
         <input
           placeholder="password"
           onChange={(e) => setLoginPassword(e.target.value)}
+          type="password"
         />
+        <br />
         <button onClick={login}>Submit</button>
       </div>
 
       <div>
         <h1>Get User</h1>
-        <button onClick={getUser}>Submit</button>
-        {data ? <h1>Welcome Back {data.username}</h1> : null}
+        <button onClick={getUser}>Get User</button>
+        {data ? <h1>Welcome Back {data.username}</h1> : <h2>Not Logged in</h2>}
       </div>
     </div>
   );
