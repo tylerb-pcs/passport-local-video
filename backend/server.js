@@ -4,8 +4,8 @@ const app = express();
 const port = 4000;
 
 import passport from "passport";
-// import passportSetup from "./config/passport-setup";
-import session from "express-session";
+import "./config/passport-setup.js";
+
 import authRoutes from "./routes/auth-routes.js";
 import mongoose from "mongoose";
 import keys from "./config/keys.js";
