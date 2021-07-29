@@ -9,7 +9,7 @@ const GOOGLE_TOKENS = {
   };
   
   const SESSION = {
-    COOKIE_KEY: "thisappisawesome"
+    COOKIE_KEY: "cookieKey"
   };
   
   const KEYS = {
